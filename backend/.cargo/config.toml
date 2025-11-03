@@ -1,0 +1,21 @@
+# [source.crates-io]
+# registry = "https://github.com/rust-lang/crates.io-index"
+[source.crates-io]
+replace-with = 'rsproxy-sparse' # 使用稀疏索引
+
+# 字节跳动稀疏索引镜像（Rust 1.68+）
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+
+# 备用配置（如果稀疏索引不可用）
+[source.rsproxy]
+registry = "https://rsproxy.cn/crates.io-index"
+
+
+# 字节跳动镜像源
+[registries.rsproxy]
+index = "https://rsproxy.cn/crates.io-index"
+
+[net]
+git-fetch-with-cli = true # 使用Git命令行工具（通常更快）
+retry = 3                 # 网络重试次数

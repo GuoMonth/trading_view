@@ -141,10 +141,3 @@ async fn get_ohlc_by_symbol(
         }
     }
 }
-
-/// 时间范围查询参数
-#[derive(Deserialize, Debug)]
-pub struct DateRangeParams {
-    pub start: String,
-    pub end: String,
-}

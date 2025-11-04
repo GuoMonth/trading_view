@@ -1,4 +1,4 @@
-use axum::{Json, extract::Path, extract::Query, extract::State, http::StatusCode, response::{IntoResponse}};
+use axum::{Json, extract::Path, extract::Query, extract::State, http::StatusCode};
 use chrono::NaiveDateTime;
 use sea_orm::DatabaseConnection;
 use tracing::error;
@@ -9,7 +9,7 @@ use crate::{services::ohlc_service, api::models::{OhlcDateRangeRequest, OhlcResp
 #[axum::debug_handler]
 pub async fn get_all_ohlc(
     db: State<DatabaseConnection>,
-) -> impl IntoResponse {
+) -> (StatusCode, Json<ApiResponse<OhlcResponse>>) {
     match ohlc_service::get_all_ohlc_data(&db).await {
         Ok(data) => {
             let response = ApiResponse::success(OhlcResponse { data });
@@ -29,7 +29,7 @@ pub async fn get_all_ohlc(
 pub async fn get_ohlc_by_symbol(
     Path(symbol): Path<String>,
     db: State<DatabaseConnection>,
-) -> impl IntoResponse {
+) -> (StatusCode, Json<ApiResponse<OhlcResponse>>) {
     match ohlc_service::get_ohlc_data_by_code(&db, &symbol).await {
         Ok(data) => {
             let response = ApiResponse::success(OhlcResponse { data });
@@ -50,7 +50,7 @@ pub async fn get_ohlc_by_date_range(
     Path(symbol): Path<String>,
     Query(params): Query<OhlcDateRangeRequest>,
     db: State<DatabaseConnection>,
-) -> impl IntoResponse {
+) -> (StatusCode, Json<ApiResponse<OhlcResponse>>) {
     // 解析时间参数
     let start_date = match NaiveDateTime::parse_from_str(&params.start, "%Y-%m-%d %H:%M:%S") {
         Ok(date) => date,

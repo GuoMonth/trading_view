@@ -8,8 +8,6 @@ use std::net::SocketAddr;
 mod api;
 use api::ohlc_api;
 
-
-
 mod entity;
 mod migration;
 mod services;
@@ -41,7 +39,10 @@ async fn main() {
         .route("/health", get(health_check))
         .route("/api/ohlc", get(ohlc_api::get_all_ohlc))
         .route("/api/ohlc/:symbol", get(ohlc_api::get_ohlc_by_symbol))
-        .route("/api/ohlc/:symbol/range", get(ohlc_api::get_ohlc_by_date_range))
+        .route(
+            "/api/ohlc/:symbol/range",
+            get(ohlc_api::get_ohlc_by_date_range),
+        )
         .with_state(db);
 
     // 监听地址

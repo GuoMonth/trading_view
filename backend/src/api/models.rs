@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use axum::http::StatusCode;
 use crate::entity::ohlc_data::Model as OhlcDataModel;
+use axum::http::StatusCode;
+use serde::{Deserialize, Serialize};
 
 /// 自定义API响应码枚举
 #[derive(Debug, Clone, Copy)]
@@ -26,10 +26,12 @@ impl ApiError {
             ApiError::Success => StatusCode::OK,
             ApiError::BadRequest | ApiError::InvalidDateFormat => StatusCode::BAD_REQUEST,
             ApiError::NotFound => StatusCode::NOT_FOUND,
-            ApiError::InternalServerError | ApiError::DatabaseError => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::InternalServerError | ApiError::DatabaseError => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         }
     }
-    
+
     /// 获取错误信息
     pub fn message(&self) -> &'static str {
         match self {
@@ -63,7 +65,7 @@ impl<T> ApiResponse<T> {
             data: Some(data),
         }
     }
-    
+
     /// 创建错误响应
     pub fn error(error: ApiError) -> Self {
         Self {
@@ -72,7 +74,7 @@ impl<T> ApiResponse<T> {
             data: None,
         }
     }
-    
+
     /// 创建带自定义消息的错误响应
     pub fn error_with_message(error: ApiError, message: String) -> Self {
         Self {

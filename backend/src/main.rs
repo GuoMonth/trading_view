@@ -1,11 +1,16 @@
-use axum::{routing::get, Router};
-use std::net::SocketAddr;
-use sea_orm::*;
+use axum::{Router, routing::get};
 use migration::Migrator;
+use sea_orm::*;
 use sea_orm_migration::migrator::MigratorTrait;
+use std::net::SocketAddr;
+
+// 导入API层模块
+mod api;
+use api::ohlc_api;
 
 mod entity;
 mod migration;
+mod services;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +29,7 @@ async fn main() {
     };
 
     // 执行数据库迁移
-    if let Err(e) = Migrator::run(&db).await {
+    if let Err(e) = Migrator::up(&db, None).await {
         tracing::error!("Failed to run database migrations: {}", e);
         return;
     }
@@ -32,6 +37,12 @@ async fn main() {
     // 创建路由
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/api/ohlc", get(ohlc_api::get_all_ohlc))
+        .route("/api/ohlc/:symbol", get(ohlc_api::get_ohlc_by_symbol))
+        .route(
+            "/api/ohlc/:symbol/range",
+            get(ohlc_api::get_ohlc_by_date_range),
+        )
         .with_state(db);
 
     // 监听地址
@@ -50,9 +61,20 @@ async fn main() {
 /// 建立数据库连接
 async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
     // 使用SQLite数据库文件
-    let db_path = "trading_view.db";
-    let db_url = format!("sqlite://{}", db_path);
-    
+    let current_dir = std::env::current_dir()
+        .map_err(|e| DbErr::Custom(format!("Failed to get current directory: {}", e)))?;
+    let db_dir = current_dir.join("db");
+    // 创建db目录如果不存在
+    std::fs::create_dir_all(&db_dir)
+        .map_err(|e| DbErr::Custom(format!("Failed to create db directory: {}", e)))?;
+    let db_path = db_dir.join("trading_view.db");
+    let db_url = format!(
+        "sqlite://{}",
+        db_path
+            .to_str()
+            .ok_or_else(|| DbErr::Custom("Invalid database path".to_string()))?
+    );
+
     tracing::info!("Connecting to database: {}", db_url);
     Database::connect(db_url).await
 }

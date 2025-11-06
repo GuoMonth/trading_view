@@ -64,6 +64,9 @@ async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
     let current_dir = std::env::current_dir()
         .map_err(|e| DbErr::Custom(format!("Failed to get current directory: {}", e)))?;
     let db_dir = current_dir.join("db");
+    // 创建db目录如果不存在
+    std::fs::create_dir_all(&db_dir)
+        .map_err(|e| DbErr::Custom(format!("Failed to create db directory: {}", e)))?;
     let db_path = db_dir.join("trading_view.db");
     let db_url = format!(
         "sqlite://{}",

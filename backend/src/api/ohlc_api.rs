@@ -4,7 +4,7 @@ use sea_orm::DatabaseConnection;
 use anyhow::{Context, Result};
 use crate::api::error::ApiErrorWrapper;
 
-use crate::{services::ohlc_service, api::models::{OhlcDateRangeRequest, OhlcResponse, ApiResponse}};
+use crate::{services::ohlc_service, api::models::{OhlcDateRangeRequest, OhlcResponse, ApiResponse, ApiError}};
 
 /// 获取所有OHLC数据
 #[axum::debug_handler]
@@ -31,8 +31,13 @@ pub async fn get_ohlc_by_symbol(
         .context(format!("Failed to get OHLC data for symbol {}", symbol))
         .map_err(ApiErrorWrapper::from)?;
 
-    let response = ApiResponse::success(OhlcResponse { data });
-    Ok((StatusCode::OK, Json(response)))
+    if data.is_empty() {
+        let response = ApiResponse::error(ApiError::NotFound);
+        Ok((StatusCode::NOT_FOUND, Json(response)))
+    } else {
+        let response = ApiResponse::success(OhlcResponse { data });
+        Ok((StatusCode::OK, Json(response)))
+    }
 }
 
 /// 根据交易对和时间范围获取OHLC数据
@@ -50,12 +55,18 @@ pub async fn get_ohlc_by_date_range(
         .with_context(|| format!("Invalid date format for end '{}'", params.end))
         .map_err(ApiErrorWrapper::from)?;
 
-    // 查询数据库
-    let data = ohlc_service::get_ohlc_data_by_date_range(&db, &symbol, start_date, end_date)
-        .await
-        .with_context(|| format!("Failed to get OHLC data for symbol {} in range {} to {}", symbol, params.start, params.end))
-        .map_err(ApiErrorWrapper::from)?;
+    // 验证日期范围
+    if start_date > end_date {
+        let response = ApiResponse::error(ApiError::BadRequest);
+        Ok((StatusCode::BAD_REQUEST, Json(response)))
+    } else {
+        // 查询数据库
+        let data = ohlc_service::get_ohlc_data_by_date_range(&db, &symbol, start_date, end_date)
+            .await
+            .with_context(|| format!("Failed to get OHLC data for symbol {} in range {} to {}", symbol, params.start, params.end))
+            .map_err(ApiErrorWrapper::from)?;
 
-    let response = ApiResponse::success(OhlcResponse { data });
-    Ok((StatusCode::OK, Json(response)))
+        let response = ApiResponse::success(OhlcResponse { data });
+        Ok((StatusCode::OK, Json(response)))
+    }
 }

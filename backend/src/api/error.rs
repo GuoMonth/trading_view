@@ -1,6 +1,5 @@
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use axum::http::StatusCode;
 use anyhow::Error;
 use tracing::error;
 
